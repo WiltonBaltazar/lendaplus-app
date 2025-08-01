@@ -1,0 +1,42 @@
+# Development Dockerfile
+FROM node:22-alpine
+
+# Install dependencies for development
+RUN apk add --no-cache libc6-compat git
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY ./frontend/package*.json ./
+
+# Install all dependencies (including devDependencies for development)
+RUN npm install
+
+# Copy source code
+COPY ./frontend .
+
+# Create a non-root user for development
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nextjs
+
+# Change ownership of the app directory to the nextjs user
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose development port
+EXPOSE 3000
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Enable hot reloading and file watching
+ENV WATCHPACK_POLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+
+# Start development server with hot reloading
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
