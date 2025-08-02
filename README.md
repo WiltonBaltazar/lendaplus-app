@@ -4,13 +4,12 @@ A complete development environment featuring Next.js frontend and Laravel backen
 
 ## 🚀 Quick Start
 
-Get the application running in 3 simple steps:
+Get the application running in 4 simple steps:
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/WiltonBaltazar/lendaplus-app.git
 cd lendaplus-app
-
 
 # 2. Set up environment files
 cp backend/.env.example backend/.env
@@ -18,6 +17,10 @@ cp frontend/.env.local.example frontend/.env.local
 
 # 3. Start with Docker
 docker-compose up --build
+
+# 4. Set up database (run in a new terminal)
+docker-compose exec laravel-app php artisan migrate
+docker-compose exec laravel-app php artisan db:seed
 ```
 
 **That's it!** Your application will be available at:
@@ -94,7 +97,6 @@ NEXT_LARAVEL_API_URLL=http://localhost:8000/api/v1
 ```
 Generate configuration NEXTAUTH_SECRET on: https://auth-secret-gen.vercel.app/
 
-
 ### 3. Start the Application
 ```bash
 # Build and start all services
@@ -104,16 +106,43 @@ docker-compose up --build
 docker-compose up -d --build
 ```
 
-### 4. First-time Setup (Automatic)
+### 4. Database Setup (Required)
+
+⚠️ **Important**: After the containers are running, you must set up the database:
+
+```bash
+# Wait for containers to be fully ready, then run:
+docker-compose exec laravel-app php artisan migrate
+
+# Seed the database with initial data
+docker-compose exec laravel-app php artisan db:seed
+```
+
+#### Alternative: Fresh Migration with Seed
+```bash
+# Drop all tables, migrate, and seed in one command
+docker-compose exec laravel-app php artisan migrate:fresh --seed
+```
+
+#### Database Setup Verification
+```bash
+# Check if migrations ran successfully
+docker-compose exec laravel-app php artisan migrate:status
+
+# List all tables
+docker-compose exec mariadb mysql -u laravel_user -p laravel_db -e "SHOW TABLES;"
+```
+
+### 5. First-time Setup (Automatic)
 The containers will automatically:
 - ✅ Install all dependencies
 - ✅ Generate Laravel application key
-- ✅ Run database migrations
 - ✅ Configure proper permissions
+- ⚠️ **Manual step required**: Run migrations and seeds (step 4 above)
 
 ## 🌐 Accessing the Application
 
-Once all containers are running:
+Once all containers are running and database is set up:
 
 ### Frontend (Next.js)
 - **URL**: http://localhost:3000
@@ -146,6 +175,30 @@ docker-compose up nextjs-app laravel-app mariadb
 - **Frontend**: Edit files in `frontend/` - changes auto-reload
 - **Backend**: Edit files in `backend/` - changes auto-reload
 - **Database**: Changes persist in Docker volume
+
+### Database Management Commands
+```bash
+# Run new migrations
+docker-compose exec laravel-app php artisan migrate
+
+# Rollback last migration
+docker-compose exec laravel-app php artisan migrate:rollback
+
+# Reset and reseed database
+docker-compose exec laravel-app php artisan migrate:fresh --seed
+
+# Seed database only
+docker-compose exec laravel-app php artisan db:seed
+
+# Seed specific seeder
+docker-compose exec laravel-app php artisan db:seed --class=UserSeeder
+
+# Create new migration
+docker-compose exec laravel-app php artisan make:migration create_example_table
+
+# Create new seeder
+docker-compose exec laravel-app php artisan make:seeder ExampleSeeder
+```
 
 ### Common Commands
 ```bash
@@ -222,6 +275,20 @@ docker-compose logs mariadb
 # Reset database
 docker-compose down -v
 docker-compose up --build
+# Then run migrations again:
+docker-compose exec laravel-app php artisan migrate --seed
+```
+
+### Migration Issues
+```bash
+# Check migration status
+docker-compose exec laravel-app php artisan migrate:status
+
+# Force run migrations (if stuck)
+docker-compose exec laravel-app php artisan migrate --force
+
+# Reset all migrations and start fresh
+docker-compose exec laravel-app php artisan migrate:fresh --seed
 ```
 
 ### Container Won't Start
@@ -242,6 +309,9 @@ docker-compose up --build service-name
 docker-compose down -v --rmi all
 docker system prune -a
 docker-compose up --build
+
+# Don't forget to run migrations again:
+docker-compose exec laravel-app php artisan migrate --seed
 ```
 
 ## 📊 Monitoring and Logs
@@ -275,6 +345,9 @@ curl http://localhost:8000/api/v1
 
 # Database connection
 docker-compose exec mariadb mysql -u laravel_user -p laravel_db -e "SELECT 1;"
+
+# Check if migrations ran
+docker-compose exec laravel-app php artisan migrate:status
 ```
 
 ### API Testing
@@ -295,6 +368,7 @@ curl -H "Accept: application/json" http://localhost:8000/api/user
 3. **HTTPS**: Configure SSL certificates
 4. **Performance**: Optimize Docker images
 5. **Security**: Implement proper firewall rules
+6. **Migrations**: Use `--force` flag and proper deployment strategies
 
 ## 🤝 Contributing
 
@@ -302,7 +376,8 @@ curl -H "Accept: application/json" http://localhost:8000/api/user
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
 4. Test with Docker: `docker-compose up --build`
-5. Submit a pull request
+5. Run migrations and seeds: `docker-compose exec laravel-app php artisan migrate --seed`
+6. Submit a pull request
 
 ## 📝 License
 
@@ -312,9 +387,10 @@ curl -H "Accept: application/json" http://localhost:8000/api/user
 
 If you encounter issues:
 1. Check the troubleshooting section above
-2. View container logs: `docker-compose logs`
-3. Create an issue in this repository
-4. Include your OS, Docker version, and error messages
+2. Verify migrations ran: `docker-compose exec laravel-app php artisan migrate:status`
+3. View container logs: `docker-compose logs`
+4. Create an issue in this repository
+5. Include your OS, Docker version, and error messages
 
 ---
 
